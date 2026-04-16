@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Приёмка яхты</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --ink: #0e1c2a; --deep: #132338; --card: #1a2e42;
+  --border: rgba(255,255,255,0.07);
+  --sea: #1f6fa0; --foam: #5bbde4;
+  --gold: #e8a020; --gold2: #ffc94a;
+  --green: #29c97a; --red: #e84545; --amber: #f09030;
+  --text: #cddce8; --muted: #5a7a8e; --white: #fff;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--text);font-family:'Manrope',sans-serif;min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
+
+.screen{display:none !important;min-height:100vh}
+.screen.active{display:flex !important;flex-direction:column}
+#checklist.active,#results.active,#history.active,#setup.active{display:block !important}
+.screen{max-width:480px;margin:0 auto}
+
+/* SPLASH */
+#splash{align-items:center;justify-content:center;min-height:100vh;padding:40px 24px;text-align:center;background:radial-gradient(ellipse at 30% 60%,rgba(31,111,160,.25) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(91,189,228,.1) 0%,transparent 50%)}
+.splash-yacht{font-size:72px;margin-bottom:8px;animation:bob 3s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.splash-title{font-family:'Unbounded',sans-serif;font-size:28px;font-weight:700;color:#fff;letter-spacing:-.5px;margin-bottom:8px}
+.splash-sub{font-size:13px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:48px}
+.splash-info{background:var(--deep);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:400px;margin-bottom:32px;text-align:left}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.info-row:last-child{border-bottom:none;padding-bottom:0}
+.info-row:first-child{padding-top:0}
+.info-label{font-size:14px;color:var(--muted)}
+.info-val{font-size:14px;font-weight:600;color:var(--text)}
+.info-val.accent{color:var(--foam)}
+.start-btn{width:100%;max-width:400px;padding:16px;background:linear-gradient(135deg,var(--sea),var(--foam));border:none;border-radius:16px;font-family:'Unbounded',sans-serif;font-size:14px;font-weight:600;color:#fff;cursor:pointer;transition:all .2s;box-shadow:0 8px 32px rgba(91,189,228,.25)}
+.start-btn:active{transform:scale(.97)}
+
+/* HISTORY */
+#history{padding-bottom:88px}
+.history-header{padding:16px;background:rgba(14,28,42,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.app-name{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700;color:#fff;margin-bottom:2px}
+.app-sub{font-size:12px;color:var(--muted)}
+.history-list{padding:16px}
+.history-card-wrap{position:relative;margin-bottom:8px;overflow:hidden;border-radius:16px}
+.history-card-delete{position:absolute;right:0;top:0;bottom:0;width:80px;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:16px;opacity:0;transition:opacity .2s}
+.history-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;transition:transform .25s ease;user-select:none}
+.history-card:active{transform:scale(.98)}
+.history-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.history-yacht{font-size:15px;font-weight:700;color:#fff}
+.history-date{font-size:12px;color:var(--muted)}
+.history-meta{font-size:12px;color:var(--muted);margin-bottom:8px}
+.history-progress-bar{height:4px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.history-progress-fill{height:100%;background:linear-gradient(90deg,var(--sea),var(--gold2));border-radius:4px}
+
+/* SETUP */
+#setup{padding-bottom:96px}
+.setup-header{padding:16px;background:rgba(14,28,42,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:8px}
+.setup-title{font-family:'Unbounded',sans-serif;font-size:16px;font-weight:700;color:#fff;flex:1}
+.setup-body{padding:24px 16px}
+.field-group{margin-bottom:16px}
+.field-label{font-size:14px;font-weight:600;color:#fff;letter-spacing:.3px;margin-bottom:8px;display:block}
+.field-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-family:'Manrope',sans-serif;font-size:14px;color:#fff;outline:none;transition:border-color .2s;-webkit-appearance:none}
+.field-input:focus{border-color:var(--foam)}
+.field-input::placeholder{color:var(--muted)}
+.field-input[type="date"]{color-scheme:dark}
+.setup-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--sea),var(--foam));border:none;border-radius:16px;font-family:'Unbounded',sans-serif;font-size:14px;font-weight:600;color:#fff;cursor:pointer;transition:all .2s;margin-top:8px}
+.setup-btn:active{transform:scale(.97)}
+
+/* CHECKLIST */
+#checklist{padding-bottom:144px}
+.cl-header{position:sticky;top:0;z-index:100;background:rgba(14,28,42,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:16px 16px 12px}
+.cl-header-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.back-btn{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--foam);font-size:20px;flex-shrink:0;transition:all .15s;line-height:1}
+.back-btn:active{transform:scale(.93)}
+.cl-title{font-family:'Unbounded',sans-serif;font-size:16px;font-weight:600;color:#fff;flex:1}
+.cl-counter{font-size:12px;font-weight:600;color:var(--foam);background:rgba(91,189,228,.12);padding:4px 8px;border-radius:16px;white-space:nowrap}
+.progress-wrap{display:flex;align-items:center;gap:8px}
+.progress-track{flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:8px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--sea),var(--gold2));border-radius:8px;transition:width .5s cubic-bezier(.34,1.56,.64,1);width:0%}
+.progress-pct{font-size:12px;font-weight:700;color:var(--gold2);min-width:32px;text-align:right}
+
+/* NOTES BANNER */
+.notes-banner{margin:16px;padding:16px;background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.2);border-radius:16px}
+.notes-banner-head{display:flex;align-items:center;gap:8px;cursor:pointer}
+.notes-banner-head.open{margin-bottom:16px}
+.notes-icon{font-size:16px}
+.notes-title{font-family:'Unbounded',sans-serif;font-size:13px;font-weight:500;color:var(--gold);flex:1;letter-spacing:.3px}
+.notes-chevron{font-size:13px;color:var(--gold);transition:transform .2s}
+.notes-chevron.open{transform:rotate(180deg)}
+.notes-list{display:none}
+.notes-list.open{display:block}
+.notes-item{font-size:12px;color:#fff;padding:4px 0;line-height:1.5;display:flex;align-items:flex-start;gap:8px}
+.notes-item::before{content:'•';color:#fff;flex-shrink:0;margin-top:1px}
+
+/* SECTIONS */
+.section{margin:0 16px 8px}
+.section-header{display:flex;align-items:center;gap:8px;padding:16px 0 8px;cursor:pointer;user-select:none}
+.section-emoji{font-size:20px}
+.section-name{font-family:'Unbounded',sans-serif;font-size:12px;font-weight:600;color:#fff;flex:1;letter-spacing:.3px}
+.section-stats{font-size:12px;color:var(--muted)}
+.section-chevron{font-size:12px;color:var(--muted);transition:transform .2s}
+.section.collapsed .section-chevron{transform:rotate(-90deg)}
+.section-items{display:flex;flex-direction:column;gap:4px}
+.section.collapsed .section-items{display:none}
+
+/* ITEMS */
+.item{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s}
+.item.done{border-color:rgba(41,201,122,.2);background:rgba(41,201,122,.05)}
+.item.problem{border-color:rgba(232,69,69,.25);background:rgba(232,69,69,.06)}
+.item.skipped{border-color:rgba(90,122,142,.2);opacity:.6}
+.item-main{display:flex;align-items:flex-start;gap:12px;padding:12px}
+.item-check{width:24px;height:24px;border-radius:8px;border:2px solid rgba(255,255,255,.15);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;font-size:12px;color:transparent;cursor:pointer}
+.item.done .item-check{background:var(--green);border-color:var(--green);color:#fff}
+.item.problem .item-check{background:var(--red);border-color:var(--red);color:#fff}
+.item.skipped .item-check{background:var(--muted);border-color:var(--muted);color:#fff;font-size:10px}
+.item-text{flex:1;cursor:pointer}
+.item-label{font-size:13px;font-weight:500;color:var(--white);line-height:1.45}
+.item.done .item-label,.item.skipped .item-label{color:var(--muted);text-decoration:line-through}
+.item-sub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+.item-badges{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.badge{font-size:10px;padding:2px 8px;border-radius:16px;font-weight:600}
+.badge-photo{background:rgba(91,189,228,.15);color:var(--foam)}
+.badge-problem{background:rgba(232,69,69,.15);color:var(--red)}
+.item-expanded{display:none;padding:0 12px 12px;flex-direction:column;gap:8px}
+.item.expanded .item-expanded{display:flex}
+.item-actions{display:flex;gap:8px}
+.act-btn{flex:1;padding:8px;border-radius:8px;border:none;font-family:'Manrope',sans-serif;font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:all .15s;text-transform:uppercase}
+.act-btn:active{transform:scale(.95)}
+.act-ok{background:rgba(41,201,122,.15);color:var(--green);border:1px solid rgba(41,201,122,.25)}
+.act-problem{background:rgba(232,69,69,.12);color:var(--red);border:1px solid rgba(232,69,69,.2)}
+.act-skip{background:rgba(90,122,142,.12);color:var(--muted);border:1px solid rgba(90,122,142,.15)}
+.photo-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.photo-thumb{width:64px;height:64px;border-radius:8px;object-fit:cover;border:1px solid rgba(91,189,228,.2)}
+.photo-add{width:64px;height:64px;border-radius:8px;background:rgba(91,189,228,.08);border:1px dashed rgba(91,189,228,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;gap:4px}
+.photo-add:active{transform:scale(.95);background:rgba(91,189,228,.15)}
+.photo-add-icon{font-size:16px}
+.photo-add-label{font-size:9px;color:var(--foam);font-weight:600;letter-spacing:.5px}
+.file-input{display:none}
+.problem-note{width:100%;background:rgba(232,69,69,.08);border:1px solid rgba(232,69,69,.15);border-radius:8px;padding:8px 12px;font-family:'Manrope',sans-serif;font-size:12px;color:#fff;resize:none;min-height:64px;outline:none}
+.problem-note::placeholder{color:var(--muted)}
+
+/* STICKY FINISH BTN */
+.checklist-footer{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(14,28,42,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:16px;z-index:200}
+.finish-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--sea),var(--foam));border:none;border-radius:16px;font-family:'Unbounded',sans-serif;font-size:14px;font-weight:600;color:#fff;cursor:pointer;transition:all .2s}
+.finish-btn:active{transform:scale(.97)}
+
+/* BOTTOM NAV */
+.bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(14,28,42,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:16px;z-index:200}
+.new-priemka-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--sea),var(--foam));border:none;border-radius:16px;font-family:'Unbounded',sans-serif;font-size:14px;font-weight:600;color:#fff;cursor:pointer;transition:all .2s}
+.new-priemka-btn:active{transform:scale(.97)}
+
+/* CONFIRM DIALOG - removed */
+
+/* RESULTS */
+#results{padding:0 0 96px}
+.res-header{padding:24px 16px 16px;background:rgba(14,28,42,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.res-title{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
+.res-date{font-size:12px;color:var(--muted)}
+.res-hero{margin:16px;padding:24px;background:linear-gradient(135deg,var(--deep),var(--card));border-radius:16px;border:1px solid var(--border);text-align:center}
+.res-status-icon{font-size:48px;margin-bottom:8px}
+.res-status-title{font-family:'Unbounded',sans-serif;font-size:20px;font-weight:700;margin-bottom:8px}
+.res-status-sub{font-size:13px;color:var(--muted)}
+.res-stats{display:flex;gap:8px;margin:8px 16px 16px}
+.res-stat{flex:1;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 8px;text-align:center}
+.res-stat-num{font-family:'Unbounded',sans-serif;font-size:24px;font-weight:700;margin-bottom:4px}
+.res-stat-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.stat-green .res-stat-num{color:var(--green)}
+.stat-red .res-stat-num{color:var(--red)}
+.stat-grey .res-stat-num{color:var(--muted)}
+.problems-section{margin:0 16px 16px}
+.problems-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.problem-card{background:var(--card);border:1px solid rgba(232,69,69,.2);border-radius:16px;padding:16px;margin-bottom:8px}
+.problem-card-label{font-size:13px;font-weight:600;color:var(--white);margin-bottom:4px}
+.problem-card-section{font-size:11px;color:var(--muted);margin-bottom:8px}
+.problem-card-note{font-size:12px;color:var(--text);background:rgba(232,69,69,.07);padding:8px 12px;border-radius:8px;margin-bottom:8px}
+.problem-photos{display:flex;gap:8px;flex-wrap:wrap}
+.problem-photo{width:64px;height:64px;border-radius:8px;object-fit:cover;border:1px solid rgba(232,69,69,.2)}
+.pdf-btn-wrap{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:16px;background:rgba(14,28,42,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);z-index:200}
+.pdf-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--sea),var(--foam));border:none;border-radius:16px;font-family:'Unbounded',sans-serif;font-size:13px;font-weight:600;color:#fff;cursor:pointer;transition:all .2s}
+.pdf-btn:active{transform:scale(.97)}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash" class="screen active">
+  <div class="splash-yacht">⛵</div>
+  <div class="splash-title">Приёмка яхты</div>
+  <div class="splash-sub">Чек-лист • Чартер</div>
+  <div class="splash-info">
+    <div class="info-row"><span class="info-label">Разделов</span><span class="info-val accent">13</span></div>
+    <div class="info-row"><span class="info-label">Пунктов</span><span class="info-val accent">150+</span></div>
+    <div class="info-row"><span class="info-label">Фото к проблемам</span><span class="info-val accent">✓</span></div>
+    <div class="info-row"><span class="info-label">Экспорт PDF</span><span class="info-val accent">✓</span></div>
+    <div class="info-row"><span class="info-label">Язык</span><span class="info-val accent">🇷🇺 Русский</span></div>
+  </div>
+  <button class="start-btn" onclick="openSetup()">Начать приёмку</button>
+</div>
+
+<!-- HISTORY -->
+<div id="history" class="screen">
+  <div class="history-header">
+    <div class="app-name">Море.FM</div>
+    <div class="app-sub">Приёмка яхты</div>
+  </div>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<!-- SETUP -->
+<div id="setup" class="screen">
+  <div class="setup-header">
+    <div class="back-btn" onclick="goBack()">‹</div>
+    <div class="setup-title">Данные приёмки</div>
+  </div>
+  <div class="setup-body">
+    <div class="field-group">
+      <label class="field-label">Название яхты</label>
+      <input class="field-input" id="fieldYacht" placeholder="Öyküm" type="text">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Модель яхты</label>
+      <input class="field-input" id="fieldModel" placeholder="Dufour 412" type="text">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Чартерная компания</label>
+      <input class="field-input" id="fieldCompany" placeholder="Most Sailing" type="text">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Марина</label>
+      <input class="field-input" id="fieldMarina" placeholder="Ece" type="text">
+    </div>
+    <button class="setup-btn" onclick="beginChecklist()">Далее</button>
+  </div>
+</div>
+
+<!-- CHECKLIST -->
+<div id="checklist" class="screen">
+  <div class="cl-header">
+    <div class="cl-header-top">
+      <div class="back-btn" onclick="saveAndGoHistory()">‹</div>
+      <div class="cl-title" id="clTitle">Приёмка яхты</div>
+      <div class="cl-counter" id="counterBadge">0 / 0</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-pct" id="progressPct">0%</div>
+    </div>
+  </div>
+  <div class="notes-banner">
+    <div class="notes-banner-head" id="notesBannerHead" onclick="toggleNotes()">
+      <span class="notes-icon">⚡</span>
+      <span class="notes-title">Важно перед началом</span>
+      <span class="notes-chevron" id="notesChevron">▾</span>
+    </div>
+    <div class="notes-list" id="notesList">
+      <div class="notes-item">Отключите береговое питание</div>
+      <div class="notes-item">Включите все потребители — напряжение не должно падать ниже 12,4В за 1-1,5 часа</div>
+      <div class="notes-item">Запросите у чартерной договор и список стоимости поломок</div>
+      <div class="notes-item">Спросите про дайвера — есть ли повреждения в подводной части, запросите фото</div>
+      <div class="notes-item">Спросите про длину цепи и её разметку</div>
+      <div class="notes-item">Спросите можно ли посмотреть паруса в марине или сделать это в море после выхода</div>
+      <div class="notes-item">Узнайте как аварийно заглушить двигатель</div>
+      <div class="notes-item">Спросите откуда измеряется глубина — от киля, ватерлинии или дна</div>
+      <div class="notes-item">Сфотографируйте и/или снимите на видео все сколы и царапины, надрывы, поломки</div>
+    </div>
+  </div>
+  <div id="sectionsContainer"></div>
+  <div class="checklist-footer">
+    <button class="finish-btn" onclick="finishChecklist()">Посмотреть отчёт</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="screen">
+  <div class="res-header">
+    <div class="cl-header-top" style="margin-bottom:0">
+      <div class="back-btn" onclick="showHistory()">‹</div>
+      <div class="res-title" style="flex:1;margin:0">Итоги приёмки</div>
+    </div>
+    <div class="res-date" id="resDate" style="margin-top:4px;padding-left:40px"></div>
+  </div>
+  <div id="resContent"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-bar" id="bottomBar" style="display:none">
+  <button class="new-priemka-btn" onclick="openSetup()">Новая приёмка</button>
+</div>
+
+
+<!-- STICKY PDF BTN -->
+<div class="pdf-btn-wrap" id="pdfBtnWrap" style="display:none">
+  <button class="pdf-btn" onclick="exportPDF()">Скачать PDF-отчёт</button>
+</div>
+
+<script>
+// DATA
+const SECTIONS = [
+  {id:'docs',emoji:'📄',name:'Документы на лодке / Documents',items:[
+    {id:'d1',label:'Свидетельство о регистрации судна / Registry certificate'},
+    {id:'d2',label:'Транзит-лог / Transit log'},
+    {id:'d3',label:'Чартерный договор / Charter agreement'},
+    {id:'d4',label:'Страховой полис судна / Insurance policy'},
+    {id:'d5',label:'Сертификат технического состояния / Seaworthiness certificate'},
+    {id:'d6',label:'Лицензия на чартерную деятельность / Charter license'},
+    {id:'d7',label:'Инструкции к оборудованию яхты / Equipment manuals',sub:'Осадка, высота мачты, объёмы танков / Boat manual: draught, mast height, tank capacities'},
+    {id:'d8',label:'Флаг порта приписки / Port of registry flag'},
+  ]},
+  {id:'engine',emoji:'⚙️',name:'Двигатель / Engine',items:[
+    {id:'e1',label:'Выхлоп / Exhaust',sub:'Сразу после старта: вода выливается с борта. Если нет — глушите двигатель. На 1200 об/мин генератор должен выдавать 14В'},
+    {id:'e2',label:'Внешний контур охлаждения: фильтр, хомуты, потёки / Water, external cooling circuit',sub:'Фильтр чист, хомуты на месте, нет потёков воды'},
+    {id:'e3',label:'Ремень генератора / Alternator belt',sub:'Не изношен, при нажатии пальцем продавливается на 1 см'},
+    {id:'e4',label:'Поддон под двигателем / Bilge / drip tray under engine',sub:'Чист и сух. Масло/антифриз/вода = вопрос к ЧК. Пара масляных пятен — не страшно'},
+    {id:'e5',label:'Приборы управления двигателем / Engine instruments',sub:'Тахометр, термометр, уровень топлива / Tachometer, thermometer, fuel gauge'},
+    {id:'e6',label:'Крепление двигателя / Engine mounts'},
+    {id:'e7',label:'Звук работы двигателя / Engine running sound'},
+    {id:'e8',label:'Аварийный кран перекрытия подачи топлива / Fuel emergency shutoff cock'},
+    {id:'e9',label:'Топливные баки / Fuel tanks',sub:'Проверить расположение / Check location'},
+    {id:'e10',label:'Фильтр тонкой очистки топлива / Secondary fuel filter'},
+    {id:'e11',label:'Запасная канистра с дизелем / Spare fuel jerry can'},
+    {id:'e12',label:'Запасной масляный фильтр и масло / Spare oil filter and engine oil'},
+    {id:'e13',label:'Запасной топливный фильтр / Spare fuel filter'},
+    {id:'e14',label:'Запасной ремень генератора / Spare alternator belt'},
+    {id:'e15',label:'Запасной импеллер водяной помпы / Spare water pump impeller'},
+    {id:'e16',label:'Подруливающее устройство / Bow thruster',sub:'Тип, расположение предохранителя'},
+    {id:'e17',label:'Винты / Propeller',sub:'Заброс / Propeller effect'},
+    {id:'e18',label:'Обороты на переднем ходу, заднем, нейтрале / Throttle — ahead, reverse, neutral'},
+  ]},
+  {id:'liquids',emoji:'🛢',name:'Уровень жидкостей / Liquids level',items:[
+    {id:'lq1',label:'Уровень тосола в расширительном бачке / Coolant level'},
+    {id:'lq2',label:'Уровень и цвет масла в двигателе / Engine oil — level and condition'},
+    {id:'lq3',label:'Масло в редукторе / трансмиссии SailDrive / Gearbox oil / SailDrive oil',sub:'Не должно быть пузырьков воздуха'},
+  ]},
+  {id:'electric',emoji:'⚡',name:'Электричество / Electricity',items:[
+    {id:'el1',label:'Тест всей электрики без берегового питания 1 час / Electrical system test without shore power 1 hour',sub:'Минимум 12,5В / min 12.5 V'},
+    {id:'el2',label:'Температура аккумуляторов / Battery temperature'},
+    {id:'el3',label:'Крепление аккумуляторов / Battery securing'},
+    {id:'el4',label:'Генератор / Alternator',sub:'Порядок включения / Start-up sequence'},
+    {id:'el5',label:'Стартовый аккумулятор / Start battery'},
+    {id:'el6',label:'Сервисный аккумулятор / Service / house battery'},
+    {id:'el7',label:'Солнечные батареи / Solar panels'},
+    {id:'el8',label:'Инвертер 220V → 12V / Inverter',sub:'Расположение, предохранитель / location and fuse'},
+    {id:'el9',label:'Ручка переключения заряда / Battery charge selector switch',sub:'Со стартового аккумулятора на сервисный'},
+  ]},
+  {id:'nav',emoji:'🧭',name:'Электроника и навигация / Electronics & Navigation',items:[
+    {id:'n1',label:'Радар / Radar'},
+    {id:'n2',label:'АИС / AIS'},
+    {id:'n3',label:'Эхолот / Echo sounder',sub:'Глубина, настройка сенсора, ручной лот / depth, offset, hand lead'},
+    {id:'n4',label:'Компас / Compass',sub:'Количество, девиация / quantity, deviation'},
+    {id:'n5',label:'GPS / ГЛОНАСС / Galileo / BeiDou'},
+    {id:'n6',label:'Лаг / Boat speed log',sub:'Единицы измерения: узлы / км·ч / knots / km/h'},
+    {id:'n7',label:'Подруливающее устройство / Bow thruster check',sub:'Проверить при работающем двигателе, отвести муринги от подрульки'},
+    {id:'n8',label:'Автомат / предохранитель подруливающего / Bow thruster fuse',sub:'Расположение / location'},
+    {id:'n9',label:'Стереосистема / Stereo system',sub:'Все динамики, баланс / all speakers, balance'},
+    {id:'n10',label:'Вебасто / Webasto heater',sub:'Порядок включения, настройка, предохранитель / start-up, settings, fuse'},
+    {id:'n11',label:'Ручной компас-пеленгатор / Hand bearing compass'},
+    {id:'n12',label:'Анемометр / ветроуказатель / Anemometer / Windex',sub:'Соответствие с флюгером на топе мачты'},
+    {id:'n13',label:'Навигационный картплоттер / Chart plotter'},
+    {id:'n14',label:'Бинокль / Binoculars'},
+    {id:'n15',label:'Морские карты, лоция / Nautical charts, pilot books',sub:'Дата актуализации / edition date'},
+    {id:'n16',label:'Канцелярия / Chartwork instruments',sub:'Плоттер, карандаш, циркуль, линейка / plotter, pencil, dividers, ruler'},
+  ]},
+  {id:'panel',emoji:'🔌',name:'Панель приборов 12V / Control panel',items:[
+    {id:'p1',label:'УКВ-радиостанция / VHF radio'},
+    {id:'p2',label:'Водяная помпа / Water pump'},
+    {id:'p3',label:'Трюмная помпа / Bilge pump'},
+    {id:'p4',label:'Внутреннее освещение / Cabin lights'},
+    {id:'p5',label:'Холодильник / Fridge'},
+    {id:'p6',label:'Якорная лебёдка / Windlass'},
+    {id:'p7',label:'Розетка USB / USB socket'},
+    {id:'p8',label:'Уровень топлива / Diesel fuel level'},
+    {id:'p9',label:'Уровень воды в танках / Water tank level'},
+    {id:'p10',label:'Аккумуляторы / Battery voltage'},
+    {id:'p11',label:'Навигационные приборы в кокпите / Navigation instruments in cockpit',sub:'Проверить наличие крышек'},
+    {id:'p12',label:'Навигационные огни / Navigation lights',sub:'Наличие, работоспособность, выключатели'},
+  ]},
+  {id:'anchor',emoji:'⚓',name:'Якорь / Anchor',items:[
+    {id:'a1',label:'Якорная цепь / Anchor chain — bitter end secured',sub:'Проверить второй конец — привязан к яхте. Иначе потеря якоря при отдаче'},
+    {id:'a2',label:'Якорная лебёдка / Windlass',sub:'Проверить до выключения двигателя'},
+    {id:'a3',label:'Ручка якорной лебёдки, ручное стравливание / Windlass handle — manual release'},
+    {id:'a4',label:'Длина цепи, разметка / Chain length and markings',sub:'Если нет диаграммы — уточнить у ЧК'},
+    {id:'a5',label:'Автомат / предохранитель якорной лебёдки / Windlass fuse — location'},
+  ]},
+  {id:'sails',emoji:'⛵',name:'Паруса / Sails',items:[
+    {id:'s1',label:'Ползуны грота / Mainsail slides'},
+    {id:'s2',label:'Лат-карманы / Batten pockets',sub:'Если грот классический — проверь не оторваны ли они и надёжно закрыты с обоих концов'},
+    {id:'s3',label:'Латы / Battens'},
+    {id:'s4',label:'Лэзи-бэг / Lazy bag'},
+    {id:'s5',label:'Проводка рифов / Reefing lines',sub:'Верёвки, блочки, люверсы / lines, blocks, cringles'},
+    {id:'s6',label:'Стаксель / Генуя / Jib / Genoa'},
+    {id:'s7',label:'Скрутка стакселя / Headsail furler'},
+    {id:'s8',label:'УФ-защита / UV protection strip',sub:'Задняя и нижняя шкаторины. Трётся о топовый огонь, радар, освещение и носовой рейлинг / leech and foot'},
+    {id:'s9',label:'Ликтрос стакселя у галсового угла / Bolt-rope at tack',sub:'Часто подорван у галсового угла — начало ликпаза обтекателя'},
+    {id:'s10',label:'Галсовый угол / Tack'},
+    {id:'s11',label:'Задняя шкаторина / Leech'},
+    {id:'s12',label:'Передняя шкаторина / Luff'},
+    {id:'s13',label:'Рифы / Reef points'},
+    {id:'s14',label:'Шкотовый угол / Clew'},
+    {id:'s15',label:'Нижняя шкаторина / Foot'},
+    {id:'s16',label:'Фаловый угол / Head'},
+  ]},
+  {id:'rigging',emoji:'🔗',name:'Такелаж и рангоут / Rig',items:[
+    {id:'r1',label:'Ванты и штаги / Shrouds and stays',sub:'Нигде не торчат пряди и стренди, особенно в местах опрессовки у талрепов'},
+    {id:'r2',label:'Вант-путенсы / Chainplates',sub:'Не болтаются, выглядят надёжно'},
+    {id:'r3',label:'Шплинты на месте / Split pins / cotter pins'},
+    {id:'r4',label:'Ванты набиты / Shrouds'},
+    {id:'r5',label:'Оплётка бегучего такелажа / Running rigging'},
+    {id:'r6',label:'Назначение каждой снасти / All lines identified'},
+    {id:'r7',label:'Стопорные узлы на концах / Stopper knots on all lines'},
+    {id:'r8',label:'Блоки / Blocks',sub:'Щёки не сломаны — иначе царапают оплётку и режут верёвку'},
+    {id:'r9',label:'Стопоры / Rope clutches / jammers',sub:'Открыть/закрыть. Не травить фалы стакселя и грота на скрутке'},
+    {id:'r10',label:'Лебёдки / Winches'},
+    {id:'r11',label:'Вертлюг гика / Gooseneck'},
+    {id:'r12',label:'Крепления оттяжки гика / Boom vang / kicking strap fittings'},
+    {id:'r13',label:'Гик ровный / Boom — check for bends'},
+    {id:'r14',label:'Краспицы / Spreaders',sub:'Не погнуты, не сломаны, симметричны'},
+    {id:'r15',label:'Погоны и каретки стаксель-шкота / Jib tracks and cars',sub:'Шкив каретки часто потёрт. Подвигать каретку вперёд-назад, стопор пальца на месте'},
+  ]},
+  {id:'deck',emoji:'🚢',name:'Палуба и кокпит / Deck & Cockpit',items:[
+    {id:'dc1',label:'Сколы и царапины / Nicks and scratches',sub:'Сфотографировать. Раковина, мидель, форштевень, края транца — провести рукой. Может быть замазано'},
+    {id:'dc2',label:'Подводная часть / Underwater hull',sub:'Снимки от ЧК или осмотр на первой якорной стоянке. Подрулька, фальшкиль, винт, перо руля'},
+    {id:'dc3',label:'Леерные стойки и рейлинги / Stanchions and lifelines',sub:'Прямые, без царапин. Контрящие винты на месте'},
+    {id:'dc4',label:'Кольца на пальцах лееров / Lifeline gate rings'},
+    {id:'dc5',label:'Люки / Hatches',sub:'Сфотографировать царапины. Открыть/закрыть. Могут течь — предупредить экипаж'},
+    {id:'dc6',label:'Швартовные утки — потянуть / Cleats — tug test'},
+    {id:'dc7',label:'Бимини и спрейхуд / Bimini and spray hood / dodger',sub:'Пройтись пальцем по швам — нет разрывов'},
+    {id:'dc8',label:'Стол в кокпите / Cockpit table'},
+    {id:'dc9',label:'Крышка заправки водяных танков / Water tank filler cap'},
+    {id:'dc10',label:'Крышка заправки топливом / Fuel filler cap'},
+    {id:'dc11',label:'Крышка сброса waste tank / Waste tank pump-out cap'},
+    {id:'dc12',label:'Автопилот / Autopilot'},
+    {id:'dc13',label:'Аппарель / Ramp',sub:'Попросить показать управление'},
+    {id:'dc14',label:'Штурвал / Wheel steering',sub:'Если сильно люфтит — проверить штур-трос'},
+    {id:'dc15',label:'Газовые баллоны / Gas bottles',sub:'Один подключён, второй потрясти — полный плещется'},
+    {id:'dc16',label:'Водяной шланг с адаптером / Water hose with adapter'},
+    {id:'dc17',label:'Кабель берегового питания / Shore power cable'},
+    {id:'dc18',label:'Дополнительные концы / Extra mooring lines'},
+    {id:'dc19',label:'Аварийный румпель / Emergency tiller'},
+    {id:'dc20',label:'Трап / Boarding ladder'},
+    {id:'dc21',label:'Лестница / Rope ladder'},
+    {id:'dc22',label:'Кранцы / Fenders',sub:'Количество, состояние'},
+    {id:'dc23',label:'Отпорный крюк / Boat hook'},
+    {id:'dc24',label:'Рундуки / Lockers',sub:'Открываются и закрываются'},
+    {id:'dc25',label:'Уборочный инвентарь / Cleaning equipment'},
+    {id:'dc26',label:'Душ в кокпите / Cockpit shower'},
+  ]},
+  {id:'interior',emoji:'🛖',name:'Внутреннее пространство / Cabins & Saloon',items:[
+    {id:'i1',label:'Кингстон чёрного танка открыт / Holding tank seacock',sub:'Косвенное свидетельство, что танк пуст'},
+    {id:'i2',label:'Шланги на кингстонах / Seacock hoses',sub:'Минимум 2 хомута, ржавчина отсутствует'},
+    {id:'i3',label:'Гальюн / Toilet',sub:'Сомневаетесь — проверьте молоком'},
+    {id:'i4',label:'Электрический гальюн / Electric toilet',sub:'Любые подозрительные звуки — в чек-лист'},
+    {id:'i5',label:'Душевая помпа / Shower bilge pump',sub:'Налить воды на пол, включить помпу — должна откачивать'},
+    {id:'i6',label:'Горячая вода / Hot water'},
+    {id:'i7',label:'Водонагреватель / Water heater',sub:'Порядок включения/выключения'},
+    {id:'i8',label:'Водяные танки / Water tanks',sub:'Найти где переключаются водяные танки'},
+    {id:'i9',label:'Топливные танки / Diesel tanks',sub:'Найти где перекрываются топливные танки'},
+    {id:'i10',label:'УКВ / VHF check',sub:'Проверить; переносную поставить на зарядку'},
+    {id:'i11',label:'Трюмная помпа / Bilge pump',sub:'Протестировать водой / water test'},
+    {id:'i12',label:'Пайолы / Floorboards',sub:'Проверить что под пайолами сухо'},
+    {id:'i13',label:'Килевые болты / Keel bolts',sub:'Смещение заводских меток, симметричность, затянутость, ржавчина'},
+    {id:'i14',label:'Силовой набор / Hull structure',sub:'Нет трещин / No cracks'},
+    {id:'i15',label:'Сколы и царапины интерьера / Interior damage',sub:'Сфотографировать'},
+    {id:'i16',label:'Газовый кран, плита / Gas shutoff, stove',sub:'Найти где перекрывается газ, проверить плиту'},
+    {id:'i17',label:'Холодильник / Fridge'},
+    {id:'i18',label:'Морозильник / Freezer'},
+    {id:'i19',label:'Полки и ящики / Shelves and drawers'},
+    {id:'i20',label:'Посуда / Galley equipment',sub:'Состояние и количество / condition and quantity'},
+    {id:'i21',label:'Двери, ключи, ручки / Doors, keys, handles'},
+    {id:'i22',label:'Мебель, матрацы, подушки / Furniture, mattresses, cushions'},
+    {id:'i23',label:'Постельное бельё / Bedding',sub:'Сухое и чистое / dry and clean'},
+    {id:'i24',label:'Вентиляторы, кондиционер / Fans, AC'},
+    {id:'i25',label:'Освещение и розетки / Lighting and outlets'},
+    {id:'i26',label:'Иллюминаторы / Portholes',sub:'Целостность'},
+  ]},
+  {id:'safety',emoji:'🆘',name:'Безопасность / Safety Equipment',items:[
+    {id:'sf1',label:'Инструктаж экипажа / Crew briefing',sub:'Жилеты, огнетушители, пиротехника / life jackets, fire extinguishers, flares'},
+    {id:'sf2',label:'Спасательные жилеты / Life jackets',sub:'Количество, размеры, баллоны, дата поверки / quantity, sizes, cylinder, service date'},
+    {id:'sf3',label:'Страховочные лини / Safety harness tethers'},
+    {id:'sf4',label:'Спасательные круги (подковы) / Horseshoe buoys'},
+    {id:'sf5',label:'Аварийный световой буй / Danbuoy'},
+    {id:'sf6',label:'Дневные знаки / Day shapes',sub:'Шар и треугольник / ball and triangle'},
+    {id:'sf7',label:'Радиолокационный отражатель / Radar reflector'},
+    {id:'sf8',label:'Плавучий линь / Floating line'},
+    {id:'sf9',label:'Аптечка первой помощи / First aid kit'},
+    {id:'sf10',label:'Огнетушители / Fire extinguishers',sub:'Количество, срок годности / quantity, expiry'},
+    {id:'sf11',label:'Противопожарная кошма / Fire blanket'},
+    {id:'sf12',label:'Сигнализация утечки газа / Gas leak alarm'},
+    {id:'sf13',label:'Пожарные / дымовые извещатели / Smoke / fire detectors'},
+    {id:'sf14',label:'Аварийный румпель / Emergency tiller',sub:'Установить и проверить / fit and test'},
+    {id:'sf15',label:'Деревянные затычки (чопики) / Emergency bungs / wooden plugs'},
+    {id:'sf16',label:'Трюмная помпа — тест / Bilge pump — test'},
+    {id:'sf17',label:'Ручная трюмная помпа / Manual bilge pump'},
+    {id:'sf18',label:'Болторез / ванторез / Rigging cutter / bolt cutter'},
+    {id:'sf19',label:'Набор инструментов / Tool kit'},
+    {id:'sf20',label:'Запасные предохранители / Spare fuses'},
+    {id:'sf21',label:'Сумка для экстренного покидания лодки / Grab bag'},
+    {id:'sf22',label:'Аварийная сигнализация / Emergency alarm'},
+    {id:'sf23',label:'Фальшфейер / Hand flares',sub:'Минимум 5 шт., срок годности / min 5, expiry date'},
+    {id:'sf24',label:'Ракеты / Rocket flares',sub:'Минимум 2 шт., срок годности / min 2, expiry date'},
+    {id:'sf25',label:'Дымовые шашки / Smoke signals',sub:'Минимум 2 шт., срок годности / min 2, expiry date'},
+    {id:'sf26',label:'Переносной фонарь / Torch / flashlight'},
+    {id:'sf27',label:'Флаги бедствия N и C / Distress flags N and C'},
+    {id:'sf28',label:'Стационарный туманный горн / Fixed fog horn'},
+    {id:'sf29',label:'Ручной туманный горн / Handheld fog horn'},
+    {id:'sf30',label:'EPIRB — АРБ аварийный радиолокационный буй'},
+    {id:'sf31',label:'SART — РЛМО радиолокационный маяк-ответчик'},
+    {id:'sf32',label:'Спасплот / Life raft'},
+    {id:'sf33',label:'Трос плота / Life raft painter'},
+    {id:'sf34',label:'Нож для отрезания троса / Safety knife'},
+  ]},
+  {id:'dinghy',emoji:'🚤',name:'Динги / Dinghy',items:[
+    {id:'dn1',label:'Динги / Dinghy',sub:'Накачать и оставить на пирсе на время проверки / Inflate and leave on dock during check'},
+    {id:'dn2',label:'Вёсла и уключины / Oars and rowlocks'},
+    {id:'dn3',label:'Якорь тузика / Dinghy anchor'},
+    {id:'dn4',label:'Воздушный насос / Air pump',sub:'Совместимость клапана / valve compatibility'},
+    {id:'dn5',label:'Топливная смесь / Outboard motor fuel mix',sub:'Проверить нужную смесь для данного мотора / Check correct mix ratio for this engine'},
+    {id:'dn6',label:'ЗиП тузика / Dinghy repair kit',sub:'Клей, заплатки / glue and patches'},
+    {id:'dn7',label:'Подвесной мотор / Outboard motor',sub:'Завести на несколько секунд / Start briefly'},
+  ]},
+];
+
+// STATE
+let state = {};
+let expandedItem = null;
+let currentMeta = {};
+let history = [];
+try { history = JSON.parse(localStorage.getItem('priemka_history') || '[]'); } catch(e) {}
+
+// INIT
+window.addEventListener('DOMContentLoaded', () => {
+  if (history.length > 0) showHistory();
+});
+
+// NAVIGATION
+function goTo(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screen).classList.add('active');
+  const showNav = screen === 'history';
+  document.getElementById('bottomBar').style.display = showNav ? 'block' : 'none';
+  if(screen !== 'results') document.getElementById('pdfBtnWrap').style.display = 'none';
+  window.scrollTo(0,0);
+}
+
+function goBack() {
+  // from setup: go back to wherever we came from
+  if (history.length > 0) showHistory();
+  else goTo('splash');
+}
+
+// HISTORY
+function showHistory() {
+  goTo('history');
+  document.getElementById('bottomBar').style.display = 'block';
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (!history.length) {
+    list.innerHTML = '<div style="text-align:center;padding:48px 16px;color:var(--muted);font-size:14px">Нет сохранённых приёмок</div>';
+    return;
+  }
+  list.innerHTML = history.slice().reverse().map(h => {
+    const done = h.done||0, total = h.total||1;
+    const pct = Math.round(done/total*100);
+    const dateStr = new Date(h.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+    const meta = [h.model,h.company,h.marina].filter(Boolean).join(' · ');
+    return `
+      <div class="history-card-wrap" id="wrap_${h.id}">
+        <div class="history-card-delete" id="del_${h.id}">🗑</div>
+        <div class="history-card" id="card_${h.id}"
+          onclick="openHistoryItem(${h.id})"
+          ontouchstart="swipeStart(event,'${h.id}')"
+          ontouchmove="swipeMove(event,'${h.id}')"
+          ontouchend="swipeEnd(event,'${h.id}')">
+          <div class="history-card-top">
+            <div class="history-yacht">${h.yacht}</div>
+            <div class="history-date">${dateStr}</div>
+          </div>
+          ${meta?`<div class="history-meta">${meta}</div>`:''}
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+            <div class="history-progress-bar" style="flex:1;margin-top:0">
+              <div class="history-progress-fill" style="width:${pct}%"></div>
+            </div>
+            <div style="font-size:12px;font-weight:600;color:#fff;white-space:nowrap">${done} / ${total}</div>
+          </div>
+          ${h.finished ? `<button onclick="exportPDFFromHistory(${h.id}, event)" style="width:100%;margin-top:12px;padding:10px;background:rgba(91,189,228,0.1);border:1px solid rgba(91,189,228,0.2);border-radius:10px;font-family:'Manrope',sans-serif;font-size:12px;font-weight:600;color:var(--foam);cursor:pointer;">Скачать PDF-отчёт</button>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function deleteItem(id) {
+  history = history.filter(h => h.id !== id);
+  try { localStorage.setItem('priemka_history', JSON.stringify(history)); } catch(e) {}
+  renderHistory();
+}
+
+let swipeStartX = 0;
+function swipeStart(e,id){ swipeStartX = e.touches[0].clientX; }
+function swipeMove(e,id){
+  const dx = e.touches[0].clientX - swipeStartX;
+  const card = document.getElementById('card_'+id);
+  const del = document.getElementById('del_'+id);
+  if(dx<0){ card.style.transform=`translateX(${Math.max(dx,-80)}px)`; del.style.opacity=Math.min(Math.abs(dx)/80,1); e.preventDefault(); }
+}
+function swipeEnd(e,id){
+  const dx = e.changedTouches[0].clientX - swipeStartX;
+  const card = document.getElementById('card_'+id);
+  const del = document.getElementById('del_'+id);
+  if(dx < -60){ card.style.transform='translateX(-80px)'; del.style.opacity='1'; setTimeout(()=>deleteItem(id),300); }
+  else{ card.style.transform='translateX(0)'; del.style.opacity='0'; }
+}
+
+function openHistoryItem(id) {
+  const item = history.find(h => h.id===id);
+  if(!item) return;
+  currentMeta = item;
+  state = item.state || {};
+  expandedItem = null;
+  buildSections();
+  document.getElementById('clTitle').textContent = currentMeta.yacht;
+  goTo('checklist');
+  updateProgress();
+}
+
+function saveAndGoHistory() {
+  saveToHistory(false);
+  showHistory();
+}
+
+// SETUP
+function openSetup() {
+  ['fieldYacht','fieldModel','fieldCompany','fieldMarina'].forEach(id => document.getElementById(id).value='');
+  goTo('setup');
+}
+
+function beginChecklist() {
+  currentMeta = {
+    yacht: document.getElementById('fieldYacht').value || 'Без названия',
+    model: document.getElementById('fieldModel').value || '',
+    company: document.getElementById('fieldCompany').value || '',
+    marina: document.getElementById('fieldMarina').value || '',
+    date: new Date().toISOString().split('T')[0],
+    id: Date.now(),
+  };
+  state = {}; expandedItem = null;
+  buildSections();
+  document.getElementById('clTitle').textContent = currentMeta.yacht;
+  goTo('checklist');
+  updateProgress();
+}
+
+// BUILD CHECKLIST
+function buildSections() {
+  const container = document.getElementById('sectionsContainer');
+  container.innerHTML = '';
+  SECTIONS.forEach(sec => {
+    const div = document.createElement('div');
+    div.className = 'section';
+    div.id = 'sec_'+sec.id;
+    div.innerHTML = `
+      <div class="section-header" onclick="toggleSection('${sec.id}')">
+        <span class="section-emoji">${sec.emoji}</span>
+        <span class="section-name">${sec.name}</span>
+        <span class="section-stats" id="secStats_${sec.id}">0/${sec.items.length}</span>
+        <span class="section-chevron">▾</span>
+      </div>
+      <div class="section-items" id="secItems_${sec.id}"></div>`;
+    container.appendChild(div);
+    sec.items.forEach((item,i) => {
+      const el = document.createElement('div');
+      el.className = 'item';
+      el.id = 'item_'+item.id;
+      el.innerHTML = buildItemHTML(item);
+      const s = state[item.id]||{};
+      if(s.status) el.classList.add(s.status);
+      document.getElementById('secItems_'+sec.id).appendChild(el);
+    });
+  });
+  updateSectionStats();
+}
+
+function buildItemHTML(item) {
+  const s = state[item.id]||{};
+  const tick = s.status==='done'?'✓':s.status==='problem'?'!':s.status==='skipped'?'—':'';
+  const photoThumbs = (s.photos||[]).map((p,i)=>`
+    <div style="position:relative;display:inline-block">
+      <img class="photo-thumb" src="${p}">
+      <div onclick="deletePhoto('${item.id}',${i},event)" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:#fff;font-weight:700">×</div>
+    </div>`).join('');
+  const badges = [
+    s.photos&&s.photos.length?`<span class="badge badge-photo">📷 ${s.photos.length}</span>`:'',
+    s.note?`<span class="badge badge-problem">⚠ заметка</span>`:'',
+  ].filter(Boolean).join('');
+  return `
+    <div class="item-main">
+      <div class="item-check" onclick="quickCheck('${item.id}',event)">${tick}</div>
+      <div class="item-text" onclick="toggleItem('${item.id}')">
+        <div class="item-label">${item.label}</div>
+        ${item.sub?`<div class="item-sub">${item.sub}</div>`:''}
+        ${badges?`<div class="item-badges">${badges}</div>`:''}
+      </div>
+    </div>
+    <div class="item-expanded">
+      <div class="item-actions">
+        <button class="act-btn act-ok" onclick="markItem('${item.id}','done',event)">✓ OK</button>
+        <button class="act-btn act-problem" onclick="markItem('${item.id}','problem',event)">✕ Проблема</button>
+        <button class="act-btn act-skip" onclick="markItem('${item.id}','skipped',event)">— Пропуск</button>
+      </div>
+      ${s.status==='problem'?`<textarea class="problem-note" placeholder="Опишите проблему..." id="note_${item.id}" oninput="saveNote('${item.id}',this.value)">${s.note||''}</textarea>`:''}
+      ${(s.status==='done'||s.status==='problem')?`
+      <div class="photo-row">
+        ${photoThumbs}
+        <div class="photo-add" onclick="addPhoto('${item.id}')">
+          <span class="photo-add-icon">📷</span>
+          <span class="photo-add-label">ФОТО</span>
+        </div>
+      </div>`:''}
+    </div>
+    <input type="file" accept="image/*" capture="environment" class="file-input" id="file_${item.id}" onchange="handlePhoto('${item.id}',this)">`;}
+
+// INTERACTIONS
+function quickCheck(id, e) {
+  e.stopPropagation();
+  if(!state[id]) state[id] = {};
+  if(state[id].status) {
+    // Clear status AND all content
+    delete state[id].status;
+    delete state[id].note;
+    delete state[id].photos;
+  } else {
+    state[id].status = 'done';
+  }
+  const el = document.getElementById('item_'+id);
+  el.classList.remove('expanded');
+  if(expandedItem === id) expandedItem = null;
+  refreshItem(id); updateProgress(); updateSectionStats(); saveToHistory(false);
+}
+
+function toggleItem(id) {
+  const el = document.getElementById('item_'+id);
+  if(expandedItem && expandedItem!==id) { const prev=document.getElementById('item_'+expandedItem); if(prev) prev.classList.remove('expanded'); }
+  el.classList.toggle('expanded');
+  expandedItem = el.classList.contains('expanded') ? id : null;
+}
+
+function markItem(id, status, e) {
+  e.stopPropagation();
+  if(!state[id]) state[id]={};
+  state[id].status = status;
+  // Keep card expanded so user can add photo/note
+  refreshItem(id);
+  // Re-expand since refreshItem rebuilds HTML
+  const el = document.getElementById('item_'+id);
+  el.classList.add('expanded');
+  expandedItem = id;
+  updateProgress(); updateSectionStats(); saveToHistory(false);
+}
+
+function deletePhoto(id, index, e) {
+  e.stopPropagation();
+  if(!state[id]||!state[id].photos) return;
+  state[id].photos.splice(index, 1);
+  refreshItem(id);
+  saveToHistory(false);
+}
+
+function saveNote(id, val) { if(!state[id]) state[id]={}; state[id].note=val; saveToHistory(false); }
+
+function addPhoto(id) { document.getElementById('file_'+id).click(); }
+
+function handlePhoto(id, input) {
+  if(!input.files||!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    compressPhoto(e.target.result, 1200, 0.75).then(compressed => {
+      if(!state[id]) state[id]={};
+      if(!state[id].photos) state[id].photos=[];
+      state[id].photos.push(compressed);
+      refreshItem(id);
+      updateProgress();
+      updateSectionStats();
+      saveToHistory(false);
+    });
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+// Compress image to max width and quality
+function compressPhoto(src, maxWidth, quality) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if(w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(src);
+    img.src = src;
+  });
+}
+
+function refreshItem(id) {
+  let itemDef=null;
+  for(const sec of SECTIONS) { for(const it of sec.items) { if(it.id===id){itemDef=it;break;} } if(itemDef) break; }
+  if(!itemDef) return;
+  const el = document.getElementById('item_'+id);
+  const wasExpanded = el.classList.contains('expanded');
+  el.innerHTML = buildItemHTML(itemDef);
+  el.classList.remove('done','problem','skipped');
+  const s = state[id]||{};
+  if(s.status) el.classList.add(s.status);
+  if(wasExpanded) el.classList.add('expanded');
+}
+
+function toggleSection(id) { document.getElementById('sec_'+id).classList.toggle('collapsed'); }
+
+function toggleNotes() {
+  const list = document.getElementById('notesList');
+  const chevron = document.getElementById('notesChevron');
+  const head = document.getElementById('notesBannerHead');
+  list.classList.toggle('open');
+  const isOpen = list.classList.contains('open');
+  chevron.classList.toggle('open', isOpen);
+  head.classList.toggle('open', isOpen);
+}
+
+// PROGRESS
+function updateProgress() {
+  let total=0, done=0;
+  SECTIONS.forEach(sec => sec.items.forEach(item => { total++; if(state[item.id]&&state[item.id].status) done++; }));
+  const pct = total>0?Math.round(done/total*100):0;
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressPct').textContent = pct+'%';
+  document.getElementById('counterBadge').textContent = done+' / '+total;
+}
+
+function updateSectionStats() {
+  SECTIONS.forEach(sec => {
+    const done = sec.items.filter(it=>state[it.id]&&state[it.id].status).length;
+    const el = document.getElementById('secStats_'+sec.id);
+    if(el) el.textContent = done+'/'+sec.items.length;
+  });
+}
+
+// SAVE
+function saveToHistory(finished) {
+  let total=0, done=0;
+  SECTIONS.forEach(sec => sec.items.forEach(item => { total++; if(state[item.id]&&state[item.id].status) done++; }));
+  const record = {...currentMeta, state, done, total, finished, savedAt:new Date().toISOString()};
+  const idx = history.findIndex(h=>h.id===currentMeta.id);
+  if(idx>=0) history[idx]=record; else history.push(record);
+  try { localStorage.setItem('priemka_history', JSON.stringify(history)); } catch(e) {}
+}
+
+// FINISH — go directly to results
+function finishChecklist() {
+  saveToHistory(true);
+  buildResults();
+  goTo('results');
+}
+
+// PDF from history card
+async function exportPDFFromHistory(id, e) {
+  e.stopPropagation();
+  const item = history.find(h => h.id === id);
+  if (!item) return;
+  // Temporarily set context for PDF export
+  const savedMeta = currentMeta;
+  const savedState = state;
+  currentMeta = item;
+  state = item.state || {};
+  await exportPDF();
+  currentMeta = savedMeta;
+  state = savedState;
+}
+
+// RESULTS
+function buildResults() {
+  let ok=0, problems=0, skipped=0, total=0;
+  const problemItems = [];
+  SECTIONS.forEach(sec => {
+    sec.items.forEach(item => {
+      total++;
+      const s = state[item.id];
+      if(!s||!s.status) return;
+      if(s.status==='done') ok++;
+      else if(s.status==='problem'){problems++;problemItems.push({item,sec,s});}
+      else skipped++;
+    });
+  });
+  const allGood = problems===0;
+  const dateStr = new Date(currentMeta.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('resDate').textContent = `${currentMeta.yacht}${currentMeta.model?' · '+currentMeta.model:''} · ${dateStr}`;
+  let problemsHTML = '';
+  if(problemItems.length){
+    problemsHTML = `<div class="problems-section">
+      <div class="problems-title">⚠ Обнаруженные проблемы</div>
+      ${problemItems.map(({item,sec,s})=>`
+        <div class="problem-card">
+          <div class="problem-card-section">${sec.emoji} ${sec.name}</div>
+          <div class="problem-card-label">${item.label}</div>
+          ${s.note?`<div class="problem-card-note">${s.note}</div>`:''}
+          ${s.photos&&s.photos.length?`<div class="problem-photos">${s.photos.map(p=>`<img class="problem-photo" src="${p}">`).join('')}</div>`:''}
+        </div>`).join('')}
+    </div>`;
+  }
+  document.getElementById('resContent').innerHTML = `
+    <div style="display:flex;gap:8px;margin:16px 16px 12px">
+      <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center">
+        <div style="font-family:'Unbounded',sans-serif;font-size:20px;font-weight:700;color:var(--green);margin-bottom:2px">${ok}</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">OK</div>
+      </div>
+      <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center">
+        <div style="font-family:'Unbounded',sans-serif;font-size:20px;font-weight:700;color:var(--red);margin-bottom:2px">${problems}</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">Проблем</div>
+      </div>
+      <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center">
+        <div style="font-family:'Unbounded',sans-serif;font-size:20px;font-weight:700;color:var(--muted);margin-bottom:2px">${skipped}</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">Пропуск</div>
+      </div>
+      <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center;display:flex;flex-direction:column;justify-content:flex-end">
+        <div style="font-family:'Unbounded',sans-serif;font-size:20px;font-weight:700;color:var(--muted);margin-bottom:2px">${ok+problems+skipped}<span style="font-size:11px;font-weight:600;color:var(--muted)"> / ${total}</span></div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">Проверено</div>
+      </div>
+    </div>
+    <div style="margin:0 16px 16px;padding:14px 16px;background:rgba(91,189,228,0.08);border:1px solid rgba(91,189,228,0.2);border-radius:12px;display:flex;gap:10px;align-items:flex-start">
+      <span style="font-size:16px;flex-shrink:0">💾</span>
+      <div style="font-size:12px;color:var(--text);line-height:1.6">PDF-файл останется у вас в телефоне. Данные приёмки хранятся в приложении, но могут быть удалены вместе с кэшем Telegram.</div>
+    </div>
+    ${problemsHTML}
+  `;
+  // Sticky PDF button
+  document.getElementById('pdfBtnWrap').style.display = 'block';
+}
+
+// Fix EXIF orientation via canvas
+async function correctImageOrientation(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      try {
+        const view = new DataView(base64ToArrayBuffer(src.split(',')[1]));
+        let orientation = 1;
+        if(view.getUint16(0, false) === 0xFFD8) {
+          let offset = 2;
+          while(offset < view.byteLength) {
+            if(view.getUint16(offset, false) === 0xFFE1) {
+              const exifOffset = offset + 10;
+              const little = view.getUint16(exifOffset, false) === 0x4949;
+              const tags = view.getUint32(exifOffset + 4, little);
+              offset = exifOffset + tags;
+              for(let i = 0; i < view.getUint16(offset, little); i++) {
+                if(view.getUint16(offset + 2 + i*12, little) === 0x0112) {
+                  orientation = view.getUint16(offset + 2 + i*12 + 8, little);
+                  break;
+                }
+              }
+              break;
+            }
+            offset += 2 + view.getUint16(offset + 2, false);
+          }
+        }
+        const w = img.naturalWidth, h = img.naturalHeight;
+        if(orientation > 4) { canvas.width = h; canvas.height = w; }
+        else { canvas.width = w; canvas.height = h; }
+        switch(orientation) {
+          case 2: ctx.transform(-1,0,0,1,w,0); break;
+          case 3: ctx.transform(-1,0,0,-1,w,h); break;
+          case 4: ctx.transform(1,0,0,-1,0,h); break;
+          case 5: ctx.transform(0,1,1,0,0,0); break;
+          case 6: ctx.transform(0,1,-1,0,h,0); break;
+          case 7: ctx.transform(0,-1,-1,0,h,w); break;
+          case 8: ctx.transform(0,-1,1,0,0,w); break;
+        }
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
+      } catch(e) {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
+      }
+    };
+    img.onerror = () => resolve(src);
+    img.src = src;
+  });
+}
+
+function base64ToArrayBuffer(base64) {
+  const bin = atob(base64);
+  const buf = new ArrayBuffer(bin.length);
+  const arr = new Uint8Array(buf);
+  for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return buf;
+}
+
+// PDF
+async function exportPDF() {
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit:'mm',format:'a4'});
+  const W=210, margin=15;
+  let y=20;
+  const checkPage = (need=20) => { if(y+need>280){doc.addPage();y=20;} };
+
+  // Extract English part after ' / ' separator only
+  const eng = (str) => {
+    if(!str) return '';
+    const idx = str.indexOf(' / ');
+    if(idx === -1) {
+      // No slash — check if it's already pure ASCII
+      const cleaned = str.replace(/[^\x20-\x7E]/g, '').trim();
+      return cleaned;
+    }
+    // Take everything after the first ' / '
+    const after = str.slice(idx + 3).trim();
+    // Strip any remaining non-ASCII
+    return after.replace(/[^\x20-\x7E]/g, '').trim();
+  };
+
+  // Clean sub — only show if has meaningful English content (at least 3 letters)
+  const engSub = (str) => {
+    const cleaned = eng(str);
+    return /[a-zA-Z]{3}/.test(cleaned) ? cleaned : '';
+  };
+
+  doc.setFillColor(14,28,42); doc.rect(0,0,210,45,'F');
+  doc.setFontSize(20);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+  doc.text('YACHT ACCEPTANCE CHECKLIST',margin,16);
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(91,189,228);
+  const metaParts = [currentMeta.yacht, currentMeta.model, currentMeta.company, currentMeta.marina]
+    .filter(Boolean)
+    .map(s => s.replace(/[^\x20-\x7E]/g,'').trim())
+    .filter(s => s.length > 0);
+  doc.text(metaParts.join(' · '), margin, 26);
+  doc.text(new Date(currentMeta.date).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}),margin,34);
+  y=55;
+
+  let ok=0,problems=0,skipped=0,total=0;
+  SECTIONS.forEach(sec=>sec.items.forEach(item=>{total++;const s=state[item.id];if(!s||!s.status)return;if(s.status==='done')ok++;else if(s.status==='problem')problems++;else skipped++;}));
+  doc.setFillColor(245,248,252);doc.roundedRect(margin,y,W-2*margin,22,3,3,'F');
+  doc.setFontSize(11);doc.setFont('helvetica','bold');
+  doc.setTextColor(41,201,122);doc.text(`OK: ${ok}`,margin+8,y+9);
+  doc.setTextColor(232,69,69);doc.text(`Issues: ${problems}`,margin+40,y+9);
+  doc.setTextColor(90,122,142);doc.text(`Skipped: ${skipped}`,margin+85,y+9);
+  doc.setTextColor(30,60,90);doc.text(`Total: ${total}`,margin+140,y+9);
+  y+=30;
+
+  for(const sec of SECTIONS){
+    // Skip section if no items are marked
+    const hasMarked = sec.items.some(item => {
+      const s = state[item.id];
+      return s && s.status;
+    });
+    if(!hasMarked) continue;
+
+    checkPage(16);
+    doc.setFillColor(14,28,42);doc.rect(margin,y,W-2*margin,9,'F');
+    doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+    doc.text(eng(sec.name),margin+4,y+6);y+=13;
+    for(const item of sec.items){
+      checkPage(10);
+      const s=state[item.id]||{};const status=s.status||'pending';
+      // Skip items not marked at all
+      if(status==='pending') continue;
+      const icon=status==='done'?'[OK]':status==='problem'?'[!!]':status==='skipped'?'[--]':'[  ]';
+      const color=status==='done'?[41,180,100]:status==='problem'?[200,50,50]:[90,122,142];
+      doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(...color);doc.text(icon,margin+2,y);
+      doc.setFont('helvetica','normal');doc.setTextColor(30,50,70);
+      const label = eng(item.label);
+      const lines=doc.splitTextToSize(label,W-margin*2-18);doc.text(lines,margin+16,y);y+=lines.length*5+1;
+      if(item.sub){
+        const subText = engSub(item.sub);
+        if(subText){doc.setFontSize(8);doc.setTextColor(120,140,160);const sl=doc.splitTextToSize(subText,W-margin*2-18);doc.text(sl,margin+16,y);y+=sl.length*4+1;}
+      }
+      // Show note for any status
+      if(s.note){
+        checkPage(10);
+        const noteClean = s.note.replace(/[^\x20-\x7E]/g, ' ').replace(/\s+/g,' ').trim();
+        if(noteClean.length > 0){
+          const noteText = 'Note: ' + noteClean;
+          doc.setFillColor(255,245,245);const nl=doc.splitTextToSize(noteText,W-margin*2-22);
+          doc.roundedRect(margin+16,y-3,W-margin*2-18,nl.length*4.5+4,2,2,'F');
+          doc.setFontSize(8);doc.setTextColor(180,50,50);doc.text(nl,margin+19,y+1);y+=nl.length*4.5+4;
+        }
+      }
+      // Show photos for any status
+      if(s.photos&&s.photos.length){
+        for(const photo of s.photos){
+          try{
+            const corrected = await correctImageOrientation(photo);
+            const img = new Image();
+            img.src = corrected;
+            await new Promise(r => img.onload = r);
+            const naturalW = img.naturalWidth || 800;
+            const naturalH = img.naturalHeight || 600;
+            const maxW = W - margin*2 - 16;
+            const maxH = 120;
+            let pw = maxW;
+            let ph = (naturalH / naturalW) * pw;
+            if(ph > maxH){ ph = maxH; pw = (naturalW / naturalH) * ph; }
+            checkPage(ph + 8);
+            doc.addImage(corrected, 'JPEG', margin+16, y, pw, ph);
+            y += ph + 6;
+            checkPage(10);
+          }catch(e){}
+        }
+      }
+      y+=2;
+    }
+    y+=4;
+  }
+  doc.setFontSize(8);doc.setTextColor(150,160,170);doc.text('Generated: '+new Date().toLocaleString('en-GB'),margin,290);
+  doc.save(`acceptance-${(currentMeta.yacht||'yacht').replace(/[^\x00-\x7F]/g,'').replace(/\s+/g,'-')||'report'}-${currentMeta.date||'report'}.pdf`);
+}
+</script>
+</body>
+</html>
