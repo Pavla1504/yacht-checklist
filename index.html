@@ -1157,9 +1157,20 @@ async function exportPDF() {
     y+=4;
   }
   doc.setFontSize(8);doc.setTextColor(150,160,170);doc.text('Generated: '+new Date().toLocaleString('en-GB'),margin,290);
+  
   const pdfBlob = doc.output('blob');
   const blobUrl = URL.createObjectURL(pdfBlob);
-  window.open(blobUrl, '_blank');
+  const filename = `acceptance-${(currentMeta.yacht||'yacht').replace(/[^\x20-\x7E]/g,'').replace(/\s+/g,'-')||'report'}-${currentMeta.date||'report'}.pdf`;
+  
+  // Create invisible link and click it
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = filename;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
 }
 </script>
 </body>
