@@ -157,6 +157,17 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
 /* CONFIRM DIALOG - removed */
 
+/* DELETE CONFIRM */
+.del-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:24px}
+.del-overlay.open{display:flex}
+.del-box{background:var(--deep);border:1px solid var(--border);border-radius:24px;padding:24px;width:100%;max-width:360px}
+.del-title{font-family:'Unbounded',sans-serif;font-size:16px;font-weight:700;color:#fff;margin-bottom:8px}
+.del-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5}
+.del-btns{display:flex;gap:8px}
+.del-btn-cancel{flex:1;padding:14px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);font-family:'Unbounded',sans-serif;font-size:12px;font-weight:600;color:var(--text);cursor:pointer}
+.del-btn-ok{flex:1;padding:14px;border-radius:12px;background:var(--red);border:none;font-family:'Unbounded',sans-serif;font-size:12px;font-weight:600;color:#fff;cursor:pointer}
+.del-btn-cancel:active,.del-btn-ok:active{transform:scale(.97)}
+
 /* RESULTS */
 #results{padding:0 0 96px}
 .res-header{padding:24px 16px 16px;background:rgba(14,28,42,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
@@ -286,6 +297,18 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     <div class="res-date" id="resDate" style="margin-top:4px;padding-left:40px"></div>
   </div>
   <div id="resContent"></div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="del-overlay" id="delOverlay">
+  <div class="del-box">
+    <div class="del-title">Удалить приёмку?</div>
+    <div class="del-sub">Это действие нельзя отменить. Все данные и фото будут удалены.</div>
+    <div class="del-btns">
+      <button class="del-btn-cancel" onclick="closeDeleteConfirm()">Отмена</button>
+      <button class="del-btn-ok" onclick="confirmDelete()">Удалить</button>
+    </div>
+  </div>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -571,29 +594,50 @@ function renderHistory() {
     const pct = Math.round(done/total*100);
     const dateStr = new Date(h.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
     const meta = [h.model,h.company,h.marina].filter(Boolean).join(' · ');
+    const hasMarked = done > 0;
     return `
-      <div class="history-card-wrap" id="wrap_${h.id}">
-        <div class="history-card-delete" id="del_${h.id}">🗑</div>
-        <div class="history-card" id="card_${h.id}"
-          onclick="openHistoryItem(${h.id})"
-          ontouchstart="swipeStart(event,'${h.id}')"
-          ontouchmove="swipeMove(event,'${h.id}')"
-          ontouchend="swipeEnd(event,'${h.id}')">
-          <div class="history-card-top">
+    <div class="history-card" id="card_${h.id}" onclick="openHistoryItem(${h.id})" style="margin-bottom:8px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+          <div>
             <div class="history-yacht">${h.yacht}</div>
-            <div class="history-date">${dateStr}</div>
+            <div class="history-date" style="margin-top:2px">${dateStr}</div>
           </div>
-          ${meta?`<div class="history-meta">${meta}</div>`:''}
-          <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-            <div class="history-progress-bar" style="flex:1;margin-top:0">
-              <div class="history-progress-fill" style="width:${pct}%"></div>
-            </div>
-            <div style="font-size:12px;font-weight:600;color:#fff;white-space:nowrap">${done} / ${total}</div>
-          </div>
-          ${h.finished ? `<button onclick="exportPDFFromHistory(${h.id}, event)" style="width:100%;margin-top:12px;padding:10px;background:rgba(91,189,228,0.1);border:1px solid rgba(91,189,228,0.2);border-radius:10px;font-family:'Manrope',sans-serif;font-size:12px;font-weight:600;color:var(--foam);cursor:pointer;">Скачать PDF-отчёт</button>` : ''}
+          <button onclick="showDeleteConfirm(${h.id}, event)" style="width:32px;height:32px;padding:0;background:transparent;border:none;font-size:16px;cursor:pointer;color:var(--muted);flex-shrink:0;margin-left:8px;opacity:0.6">🗑</button>
         </div>
+        ${meta?`<div class="history-meta" style="margin-top:6px">${meta}</div>`:''}
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+          <div class="history-progress-bar" style="flex:1;margin-top:0">
+            <div class="history-progress-fill" style="width:${pct}%"></div>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:#fff;white-space:nowrap">${done} / ${total}</div>
+        </div>
+        ${hasMarked ? `
+        <div style="margin-top:12px">
+          <button onclick="exportPDFFromHistory(${h.id}, event)" style="width:100%;padding:10px;background:rgba(91,189,228,0.1);border:1px solid rgba(91,189,228,0.2);border-radius:10px;font-family:'Manrope',sans-serif;font-size:12px;font-weight:600;color:var(--foam);cursor:pointer;">Скачать PDF</button>
+        </div>` : ''}
       </div>`;
   }).join('');
+}
+
+let pendingDeleteId = null;
+
+function showDeleteConfirm(id, e) {
+  e.stopPropagation();
+  pendingDeleteId = id;
+  document.getElementById('delOverlay').classList.add('open');
+}
+
+function closeDeleteConfirm() {
+  pendingDeleteId = null;
+  document.getElementById('delOverlay').classList.remove('open');
+}
+
+function confirmDelete() {
+  if(pendingDeleteId === null) return;
+  history = history.filter(h => h.id !== pendingDeleteId);
+  try { localStorage.setItem('priemka_history', JSON.stringify(history)); } catch(e) {}
+  closeDeleteConfirm();
+  renderHistory();
 }
 
 function deleteItem(id) {
@@ -602,21 +646,11 @@ function deleteItem(id) {
   renderHistory();
 }
 
+// Swipe kept for compatibility but not used
 let swipeStartX = 0;
 function swipeStart(e,id){ swipeStartX = e.touches[0].clientX; }
-function swipeMove(e,id){
-  const dx = e.touches[0].clientX - swipeStartX;
-  const card = document.getElementById('card_'+id);
-  const del = document.getElementById('del_'+id);
-  if(dx<0){ card.style.transform=`translateX(${Math.max(dx,-80)}px)`; del.style.opacity=Math.min(Math.abs(dx)/80,1); e.preventDefault(); }
-}
-function swipeEnd(e,id){
-  const dx = e.changedTouches[0].clientX - swipeStartX;
-  const card = document.getElementById('card_'+id);
-  const del = document.getElementById('del_'+id);
-  if(dx < -60){ card.style.transform='translateX(-80px)'; del.style.opacity='1'; setTimeout(()=>deleteItem(id),300); }
-  else{ card.style.transform='translateX(0)'; del.style.opacity='0'; }
-}
+function swipeMove(e,id){}
+function swipeEnd(e,id){}
 
 function openHistoryItem(id) {
   const item = history.find(h => h.id===id);
@@ -724,7 +758,7 @@ function buildItemHTML(item) {
         </div>
       </div>`:''}
     </div>
-    <input type="file" accept="image/*" capture="environment" class="file-input" id="file_${item.id}" onchange="handlePhoto('${item.id}',this)">`;}
+    <input type="file" accept="image/*" class="file-input" id="file_${item.id}" onchange="handlePhoto('${item.id}',this)">`;}
 
 // INTERACTIONS
 function quickCheck(id, e) {
@@ -1123,7 +1157,9 @@ async function exportPDF() {
     y+=4;
   }
   doc.setFontSize(8);doc.setTextColor(150,160,170);doc.text('Generated: '+new Date().toLocaleString('en-GB'),margin,290);
-  doc.save(`acceptance-${(currentMeta.yacht||'yacht').replace(/[^\x00-\x7F]/g,'').replace(/\s+/g,'-')||'report'}-${currentMeta.date||'report'}.pdf`);
+  const pdfBlob = doc.output('blob');
+  const blobUrl = URL.createObjectURL(pdfBlob);
+  window.open(blobUrl, '_blank');
 }
 </script>
 </body>
