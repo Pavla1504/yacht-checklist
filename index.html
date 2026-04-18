@@ -1165,16 +1165,14 @@ async function exportPDF() {
   const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
   
   if (!userId) {
-    // Fallback for browser testing - download directly
-    const pdfBlob = doc.output('blob');
-    const blobUrl = URL.createObjectURL(pdfBlob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    // Debug: show what we have
+    const tgInfo = JSON.stringify({
+      hasTG: !!window.Telegram,
+      hasWebApp: !!window.Telegram?.WebApp,
+      initData: window.Telegram?.WebApp?.initData?.slice(0,50),
+      user: window.Telegram?.WebApp?.initDataUnsafe?.user
+    });
+    alert('Нет userId. Инфо: ' + tgInfo);
     return;
   }
 
