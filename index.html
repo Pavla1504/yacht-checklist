@@ -133,9 +133,9 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .item.problem .item-check{background:var(--red);border-color:var(--red);color:#fff}
 .item.skipped .item-check{background:var(--muted);border-color:var(--muted);color:#fff;font-size:10px}
 .item-text{flex:1;cursor:pointer}
-.item-label{font-size:13px;font-weight:500;color:var(--white);line-height:1.45}
+.item-label{font-size:15px;font-weight:500;color:var(--white);line-height:1.45}
 .item.done .item-label,.item.skipped .item-label{color:var(--muted);text-decoration:line-through}
-.item-sub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+.item-sub{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.4}
 .item-badges{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
 .badge{font-size:10px;padding:2px 8px;border-radius:16px;font-weight:600}
 .badge-photo{background:rgba(91,189,228,.15);color:var(--foam)}
@@ -143,7 +143,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .item-expanded{display:none;padding:0 12px 12px;flex-direction:column;gap:8px}
 .item.expanded .item-expanded{display:flex}
 .item-actions{display:flex;gap:8px}
-.act-btn{flex:1;padding:8px;border-radius:8px;border:none;font-family:'Manrope',sans-serif;font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:all .15s;text-transform:uppercase}
+.act-btn{flex:1;padding:8px;border-radius:8px;border:none;font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:all .15s;text-transform:uppercase}
 .act-btn:active{transform:scale(.95)}
 .act-ok{background:rgba(41,201,122,.15);color:var(--green);border:1px solid rgba(41,201,122,.25)}
 .act-problem{background:rgba(232,69,69,.12);color:var(--red);border:1px solid rgba(232,69,69,.2)}
@@ -200,9 +200,9 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .problems-section{margin:0 16px 16px}
 .problems-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
 .problem-card{background:var(--card);border:1px solid rgba(232,69,69,.2);border-radius:16px;padding:16px;margin-bottom:8px}
-.problem-card-label{font-size:13px;font-weight:600;color:var(--white);margin-bottom:4px}
-.problem-card-section{font-size:11px;color:var(--muted);margin-bottom:8px}
-.problem-card-note{font-size:12px;color:var(--text);background:rgba(232,69,69,.07);padding:8px 12px;border-radius:8px;margin-bottom:8px}
+.problem-card-label{font-size:15px;font-weight:600;color:var(--white);margin-bottom:4px}
+.problem-card-section{font-size:13px;color:var(--muted);margin-bottom:8px}
+.problem-card-note{font-size:13px;color:var(--text);background:rgba(232,69,69,.07);padding:8px 12px;border-radius:8px;margin-bottom:8px}
 .problem-photos{display:flex;gap:8px;flex-wrap:wrap}
 .problem-photo{width:64px;height:64px;border-radius:8px;object-fit:cover;border:1px solid rgba(232,69,69,.2)}
 .pdf-btn-wrap{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:16px;background:rgba(14,28,42,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);z-index:200}
@@ -1022,7 +1022,7 @@ function buildResults() {
     </div>
     <div style="margin:0 16px 16px;padding:14px 16px;background:rgba(91,189,228,0.08);border:1px solid rgba(91,189,228,0.2);border-radius:12px;display:flex;gap:10px;align-items:flex-start">
       <span style="font-size:16px;flex-shrink:0">💾</span>
-      <div style="font-size:12px;color:var(--text);line-height:1.6">PDF-файл останется у вас в телефоне. Данные приёмки хранятся в приложении, но могут быть удалены вместе с кэшем Telegram.</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.6">PDF-файл останется у вас в телефоне. Данные приёмки хранятся в приложении, но могут быть удалены вместе с кэшем Telegram.</div>
     </div>
     ${problemsHTML}
   `;
