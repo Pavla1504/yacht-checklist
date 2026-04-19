@@ -730,6 +730,16 @@ function buildSections() {
       if(s.status) el.classList.add(s.status);
       document.getElementById('secItems_'+sec.id).appendChild(el);
     });
+    // Add "Other" item at the end of each section
+    const otherId = 'other_'+sec.id;
+    const otherItem = {id: otherId, label: 'Дополнительно / Other stuff', sub: 'Добавь своё если этого нет в списке'};
+    const otherEl = document.createElement('div');
+    otherEl.className = 'item';
+    otherEl.id = 'item_'+otherId;
+    otherEl.innerHTML = buildItemHTML(otherItem);
+    const os = state[otherId]||{};
+    if(os.status) otherEl.classList.add(os.status);
+    document.getElementById('secItems_'+sec.id).appendChild(otherEl);
   });
   updateSectionStats();
 }
@@ -858,8 +868,16 @@ function compressPhoto(src, maxWidth, quality) {
 }
 
 function refreshItem(id) {
-  let itemDef=null;
-  for(const sec of SECTIONS) { for(const it of sec.items) { if(it.id===id){itemDef=it;break;} } if(itemDef) break; }
+  let itemDef = null;
+  for(const sec of SECTIONS) {
+    for(const it of sec.items) { if(it.id===id){itemDef=it;break;} }
+    if(itemDef) break;
+    // Check if it's the "other" item for this section
+    if(id === 'other_'+sec.id) {
+      itemDef = {id: 'other_'+sec.id, label: 'Дополнительно / Other stuff', sub: 'Добавь своё если этого нет в списке'};
+      break;
+    }
+  }
   if(!itemDef) return;
   const el = document.getElementById('item_'+id);
   const wasExpanded = el.classList.contains('expanded');
@@ -885,7 +903,11 @@ function toggleNotes() {
 // PROGRESS
 function updateProgress() {
   let total=0, done=0;
-  SECTIONS.forEach(sec => sec.items.forEach(item => { total++; if(state[item.id]&&state[item.id].status) done++; }));
+  SECTIONS.forEach(sec => {
+    sec.items.forEach(item => { total++; if(state[item.id]&&state[item.id].status) done++; });
+    total++; // other item
+    if(state['other_'+sec.id]&&state['other_'+sec.id].status) done++;
+  });
   const pct = total>0?Math.round(done/total*100):0;
   document.getElementById('progressFill').style.width = pct+'%';
   document.getElementById('progressPct').textContent = pct+'%';
@@ -894,9 +916,11 @@ function updateProgress() {
 
 function updateSectionStats() {
   SECTIONS.forEach(sec => {
-    const done = sec.items.filter(it=>state[it.id]&&state[it.id].status).length;
+    let done = sec.items.filter(it=>state[it.id]&&state[it.id].status).length;
+    if(state['other_'+sec.id]&&state['other_'+sec.id].status) done++;
+    const total = sec.items.length + 1;
     const el = document.getElementById('secStats_'+sec.id);
-    if(el) el.textContent = done+'/'+sec.items.length;
+    if(el) el.textContent = done+'/'+total;
   });
 }
 
@@ -951,6 +975,15 @@ function buildResults() {
       else if(s.status==='problem'){problems++;problemItems.push({item,sec,s});}
       else skipped++;
     });
+    // Other item
+    const os = state['other_'+sec.id];
+    if(os&&os.status) {
+      total++;
+      const otherItem = {id:'other_'+sec.id, label:'Дополнительно / Other stuff'};
+      if(os.status==='done') ok++;
+      else if(os.status==='problem'){problems++;problemItems.push({item:otherItem,sec,s:os});}
+      else skipped++;
+    } else { total++; }
   });
   const allGood = problems===0;
   const dateStr = new Date(currentMeta.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
