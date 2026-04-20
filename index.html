@@ -1211,7 +1211,9 @@ async function exportPDF(externalBtn, externalOriginalText) {
   doc.setFontSize(8);doc.setTextColor(150,160,170);doc.text('Generated: '+new Date().toLocaleString('en-GB'),margin,290);
   
   const pdfBase64 = doc.output('datauristring').split(',')[1];
-  const filename = `acceptance-${(currentMeta.yacht||'yacht').replace(/[^\x20-\x7E]/g,'').replace(/\s+/g,'-')||'report'}-${currentMeta.date||'report'}.pdf`;
+  const yachtName = (currentMeta.yacht||'Без названия').replace(/[^\x20-\x7E]/g,'').trim().replace(/\s+/g,'-') || 'yacht';
+  const date = currentMeta.date || new Date().toISOString().split('T')[0];
+  const filename = `${yachtName}-${date}.pdf`;
   
   // Get Telegram user ID
   const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
